@@ -1,6 +1,7 @@
 # Reviewr - AI-Powered Code Review Platform
 
 Reviewr is a full-stack code review platform that automates code analysis, highlights bugs/security issues, and suggests fixes.
+The interface uses a clean, solid color design with no AI jargon or complex gradients.
 
 ## Phase 1: Core AI Review Workflow
 
