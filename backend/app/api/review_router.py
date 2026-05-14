@@ -1,17 +1,12 @@
 from fastapi import APIRouter, HTTPException
-from app.schemas.review import ReviewRequest, ReviewResponse, ReviewComment
+from app.schemas.review import ReviewRequest, ReviewResponse
+from app.services.openai_service import review_code
 
 router = APIRouter(prefix="/review", tags=["review"])
 
 @router.post("", response_model=ReviewResponse)
 def review_code_endpoint(payload: ReviewRequest):
-    # Initial basic endpoint returning empty list or simple mock
-    mock_comments = [
-        ReviewComment(
-            line_number=1,
-            severity="info",
-            message="Endpoint received code review request successfully.",
-            suggestion="No changes needed."
-        )
-    ]
-    return ReviewResponse(comments=mock_comments)
+    try:
+        return review_code(payload.code, payload.language)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to analyze code: {str(e)}")
