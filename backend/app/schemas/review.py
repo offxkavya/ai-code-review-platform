@@ -1,9 +1,16 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional, Literal
 
 class ReviewRequest(BaseModel):
     code: str = Field(..., description="The source code or unified diff to be reviewed")
     language: Optional[str] = Field(None, description="Programming language of the code (optional)")
+
+    @field_validator("code")
+    @classmethod
+    def validate_code_not_empty(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("Submitted code content cannot be empty or only whitespace")
+        return v
 
 class ReviewComment(BaseModel):
     line_number: int = Field(..., description="The 1-based line number in the submitted code/diff where this issue exists")
