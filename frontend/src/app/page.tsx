@@ -2,9 +2,20 @@
 
 import { useState } from "react";
 
+const SAMPLE_TEMPLATES: Record<string, string> = {
+  python: `def process_data(items):\n    # TODO: Add exception handling\n    for i in range(len(items)):\n        print("Processing item:", items[i])\n        if items[i] == 0:\n            result = 100 / items[i] # Bug here!\n            eval("result + 1") # Security risk!\n    return True`,
+  javascript: `function calculateTotal(price, tax) {\n  // TODO: validate inputs\n  var total = price + tax;\n  print("Calculating...");\n  var parsedVal = eval("price * tax");\n  return total;\n}`,
+  diff: `diff --git a/main.py b/main.py\n--- a/main.py\n+++ b/main.py\n@@ -1,5 +1,6 @@\n def run_action(arg):\n-    print("starting")\n+    # TODO: sanitize arg input\n+    print("Executing action: " + arg)\n+    if arg == None:\n-        pass\n+        raise ValueError("Missing argument")\n     eval(arg)`
+};
+
 export default function Home() {
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState("python");
+
+  const loadTemplate = (lang: string) => {
+    setLanguage(lang);
+    setCode(SAMPLE_TEMPLATES[lang] || "");
+  };
 
   return (
     <div className="flex-1 bg-[#09090b] flex flex-col items-center justify-center p-6 sm:p-12 relative overflow-hidden">
@@ -24,13 +35,58 @@ export default function Home() {
 
         {/* Input Panel with Glassmorphism */}
         <div className="bg-[#18181b]/50 border border-[#27272a] rounded-2xl p-6 backdrop-blur-xl shadow-2xl space-y-6 glow-card">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-zinc-200">Submit Code</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold text-zinc-200">Submit Code</h2>
+              <p className="text-xs text-zinc-500">Select language or load a test template</p>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-zinc-300 text-sm focus:outline-none focus:border-indigo-500"
+              >
+                <option value="python">Python</option>
+                <option value="javascript">JavaScript</option>
+                <option value="diff">Unified Diff</option>
+                <option value="other">Other</option>
+              </select>
+              
+              <div className="flex gap-1 bg-zinc-950/60 p-1 border border-zinc-800 rounded-lg">
+                <button
+                  onClick={() => loadTemplate("python")}
+                  className="px-2.5 py-1 rounded text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition"
+                >
+                  Py Template
+                </button>
+                <button
+                  onClick={() => loadTemplate("diff")}
+                  className="px-2.5 py-1 rounded text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition"
+                >
+                  Diff Template
+                </button>
+              </div>
+            </div>
           </div>
           
-          <div className="w-full h-80 bg-zinc-950/40 border border-zinc-800 rounded-xl p-4">
-            {/* Code placeholder for now */}
-            <p className="text-zinc-500 text-sm">Editor scaffold ready...</p>
+          <div className="relative rounded-xl border border-zinc-800 bg-zinc-950/60 shadow-inner overflow-hidden font-mono text-sm">
+            {/* Window header */}
+            <div className="flex items-center justify-between px-4 py-2 bg-zinc-950/90 border-b border-zinc-850">
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-full bg-[#ff5f56]" />
+                <span className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
+                <span className="w-3 h-3 rounded-full bg-[#27c93f]" />
+              </div>
+              <span className="text-[11px] text-zinc-500 font-medium">editor.py</span>
+            </div>
+            
+            <textarea
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="Paste your source code or diff here..."
+              className="w-full h-80 bg-transparent text-zinc-200 px-4 py-3 focus:outline-none resize-none font-mono leading-relaxed"
+            />
           </div>
         </div>
       </div>
