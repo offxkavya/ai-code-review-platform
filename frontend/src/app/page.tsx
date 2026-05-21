@@ -71,89 +71,106 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Input Panel with Glassmorphism */}
-        <div className="bg-[#18181b]/50 border border-[#27272a] rounded-2xl p-6 backdrop-blur-xl shadow-2xl space-y-6 glow-card">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-semibold text-zinc-200">Submit Code</h2>
-              <p className="text-xs text-zinc-500">Select language or load a test template</p>
+        {isLoading ? (
+          /* Premium Loading Screen */
+          <div className="bg-[#18181b]/50 border border-[#27272a] rounded-2xl p-12 backdrop-blur-xl shadow-2xl flex flex-col items-center justify-center min-h-[450px] space-y-8 animate-fade-in relative overflow-hidden">
+            {/* Spinning Radar Animation */}
+            <div className="relative flex items-center justify-center h-32 w-32">
+              <div className="absolute inset-0 rounded-full border-2 border-indigo-500/10 animate-ping" />
+              <div className="absolute h-24 w-24 rounded-full border border-indigo-500/30 animate-pulse bg-gradient-to-tr from-indigo-500/5 to-transparent" />
+              <div className="h-16 w-16 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                <span className="h-6 w-6 border-3 border-white/20 border-t-white rounded-full animate-spin" />
+              </div>
             </div>
-            
-            <div className="flex items-center gap-2">
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                disabled={isLoading}
-                className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-zinc-300 text-sm focus:outline-none focus:border-indigo-500 disabled:opacity-50"
-              >
-                <option value="python">Python</option>
-                <option value="javascript">JavaScript</option>
-                <option value="diff">Unified Diff</option>
-                <option value="other">Other</option>
-              </select>
+
+            <div className="text-center space-y-3 max-w-md">
+              <h3 className="text-xl font-bold text-zinc-100">Analyzing Codebase</h3>
+              <p className="text-sm text-zinc-400 animate-pulse min-h-[20px] transition-all duration-300">
+                {LOADING_STEPS[loadingStep]}
+              </p>
+            </div>
+
+            {/* Micro progress-bar */}
+            <div className="w-full max-w-xs bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-zinc-800">
+              <div 
+                className="h-full bg-gradient-to-r from-indigo-500 to-violet-600 transition-all duration-500 ease-out" 
+                style={{ width: `${((loadingStep + 1) / LOADING_STEPS.length) * 100}%` }}
+              />
+            </div>
+          </div>
+        ) : (
+          /* Input Panel with Glassmorphism */
+          <div className="bg-[#18181b]/50 border border-[#27272a] rounded-2xl p-6 backdrop-blur-xl shadow-2xl space-y-6 glow-card">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold text-zinc-200">Submit Code</h2>
+                <p className="text-xs text-zinc-500">Select language or load a test template</p>
+              </div>
               
-              <div className="flex gap-1 bg-zinc-950/60 p-1 border border-zinc-800 rounded-lg">
-                <button
-                  onClick={() => loadTemplate("python")}
-                  disabled={isLoading}
-                  className="px-2.5 py-1 rounded text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition disabled:opacity-50"
+              <div className="flex items-center gap-2">
+                <select
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value)}
+                  className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-zinc-300 text-sm focus:outline-none focus:border-indigo-500"
                 >
-                  Py Template
-                </button>
-                <button
-                  onClick={() => loadTemplate("diff")}
-                  disabled={isLoading}
-                  className="px-2.5 py-1 rounded text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition disabled:opacity-50"
-                >
-                  Diff Template
-                </button>
+                  <option value="python">Python</option>
+                  <option value="javascript">JavaScript</option>
+                  <option value="diff">Unified Diff</option>
+                  <option value="other">Other</option>
+                </select>
+                
+                <div className="flex gap-1 bg-zinc-950/60 p-1 border border-zinc-800 rounded-lg">
+                  <button
+                    onClick={() => loadTemplate("python")}
+                    className="px-2.5 py-1 rounded text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition"
+                  >
+                    Py Template
+                  </button>
+                  <button
+                    onClick={() => loadTemplate("diff")}
+                    className="px-2.5 py-1 rounded text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition"
+                  >
+                    Diff Template
+                  </button>
+                </div>
               </div>
-            </div>
-          </div>
-          
-          <div className="relative rounded-xl border border-zinc-800 bg-zinc-950/60 shadow-inner overflow-hidden font-mono text-sm">
-            {/* Window header */}
-            <div className="flex items-center justify-between px-4 py-2 bg-zinc-950/90 border-b border-zinc-850">
-              <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-[#ff5f56]" />
-                <span className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
-                <span className="w-3 h-3 rounded-full bg-[#27c93f]" />
-              </div>
-              <span className="text-[11px] text-zinc-500 font-medium">
-                {language === "diff" ? "commit.patch" : `code.${language === "python" ? "py" : language === "javascript" ? "js" : "txt"}`}
-              </span>
             </div>
             
-            <textarea
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              disabled={isLoading}
-              placeholder="Paste your source code or diff here..."
-              className="w-full h-80 bg-transparent text-zinc-200 px-4 py-3 focus:outline-none resize-none font-mono leading-relaxed disabled:opacity-50"
-            />
-          </div>
+            <div className="relative rounded-xl border border-zinc-800 bg-zinc-950/60 shadow-inner overflow-hidden font-mono text-sm">
+              {/* Window header */}
+              <div className="flex items-center justify-between px-4 py-2 bg-zinc-950/90 border-b border-zinc-850">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-full bg-[#ff5f56]" />
+                  <span className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
+                  <span className="w-3 h-3 rounded-full bg-[#27c93f]" />
+                </div>
+                <span className="text-[11px] text-zinc-500 font-medium">
+                  {language === "diff" ? "commit.patch" : `code.${language === "python" ? "py" : language === "javascript" ? "js" : "txt"}`}
+                </span>
+              </div>
+              
+              <textarea
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="Paste your source code or diff here..."
+                className="w-full h-80 bg-transparent text-zinc-200 px-4 py-3 focus:outline-none resize-none font-mono leading-relaxed"
+              />
+            </div>
 
-          {error && (
-            <p className="text-sm text-rose-400 font-medium">{error}</p>
-          )}
+            {error && (
+              <p className="text-sm text-rose-400 font-medium">{error}</p>
+            )}
 
-          <div className="flex justify-end">
-            <button
-              onClick={handleReviewSubmit}
-              disabled={isLoading}
-              className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-750 text-white shadow-lg shadow-indigo-500/25 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2 cursor-pointer"
-            >
-              {isLoading ? (
-                <>
-                  <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Running Review...
-                </>
-              ) : (
-                "Run AI Review"
-              )}
-            </button>
+            <div className="flex justify-end">
+              <button
+                onClick={handleReviewSubmit}
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-750 text-white shadow-lg shadow-indigo-500/25 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
+              >
+                Run AI Review
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
