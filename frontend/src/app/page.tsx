@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const SAMPLE_TEMPLATES: Record<string, string> = {
   python: `def process_data(items):\n    # TODO: Add exception handling\n    for i in range(len(items)):\n        print("Processing item:", items[i])\n        if items[i] == 0:\n            result = 100 / items[i] # Bug here!\n            eval("result + 1") # Security risk!\n    return True`,
@@ -8,13 +8,51 @@ const SAMPLE_TEMPLATES: Record<string, string> = {
   diff: `diff --git a/main.py b/main.py\n--- a/main.py\n+++ b/main.py\n@@ -1,5 +1,6 @@\n def run_action(arg):\n-    print("starting")\n+    # TODO: sanitize arg input\n+    print("Executing action: " + arg)\n+    if arg == None:\n-        pass\n+        raise ValueError("Missing argument")\n     eval(arg)`
 };
 
+const LOADING_STEPS = [
+  "Initializing reviewer environment...",
+  "Parsing code structure & tokens...",
+  "Applying security rules & templates...",
+  "Querying Claude LLM reviews...",
+  "Formatting suggestions..."
+];
+
 export default function Home() {
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState("python");
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isLoading) {
+      interval = setInterval(() => {
+        setLoadingStep((prev) => (prev < LOADING_STEPS.length - 1 ? prev + 1 : prev));
+      }, 1500);
+    } else {
+      setLoadingStep(0);
+    }
+    return () => clearInterval(interval);
+  }, [isLoading]);
 
   const loadTemplate = (lang: string) => {
     setLanguage(lang);
     setCode(SAMPLE_TEMPLATES[lang] || "");
+    setError(null);
+  };
+
+  const handleReviewSubmit = async () => {
+    if (!code.trim()) {
+      setError("Please paste some code or a diff first.");
+      return;
+    }
+    setError(null);
+    setIsLoading(true);
+    
+    // Simulate endpoint call for state verification
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 8000);
   };
 
   return (
@@ -45,7 +83,8 @@ export default function Home() {
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
-                className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-zinc-300 text-sm focus:outline-none focus:border-indigo-500"
+                disabled={isLoading}
+                className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-zinc-300 text-sm focus:outline-none focus:border-indigo-500 disabled:opacity-50"
               >
                 <option value="python">Python</option>
                 <option value="javascript">JavaScript</option>
@@ -56,13 +95,15 @@ export default function Home() {
               <div className="flex gap-1 bg-zinc-950/60 p-1 border border-zinc-800 rounded-lg">
                 <button
                   onClick={() => loadTemplate("python")}
-                  className="px-2.5 py-1 rounded text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition"
+                  disabled={isLoading}
+                  className="px-2.5 py-1 rounded text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition disabled:opacity-50"
                 >
                   Py Template
                 </button>
                 <button
                   onClick={() => loadTemplate("diff")}
-                  className="px-2.5 py-1 rounded text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition"
+                  disabled={isLoading}
+                  className="px-2.5 py-1 rounded text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition disabled:opacity-50"
                 >
                   Diff Template
                 </button>
@@ -78,15 +119,39 @@ export default function Home() {
                 <span className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
                 <span className="w-3 h-3 rounded-full bg-[#27c93f]" />
               </div>
-              <span className="text-[11px] text-zinc-500 font-medium">editor.py</span>
+              <span className="text-[11px] text-zinc-500 font-medium">
+                {language === "diff" ? "commit.patch" : `code.${language === "python" ? "py" : language === "javascript" ? "js" : "txt"}`}
+              </span>
             </div>
             
             <textarea
               value={code}
               onChange={(e) => setCode(e.target.value)}
+              disabled={isLoading}
               placeholder="Paste your source code or diff here..."
-              className="w-full h-80 bg-transparent text-zinc-200 px-4 py-3 focus:outline-none resize-none font-mono leading-relaxed"
+              className="w-full h-80 bg-transparent text-zinc-200 px-4 py-3 focus:outline-none resize-none font-mono leading-relaxed disabled:opacity-50"
             />
+          </div>
+
+          {error && (
+            <p className="text-sm text-rose-400 font-medium">{error}</p>
+          )}
+
+          <div className="flex justify-end">
+            <button
+              onClick={handleReviewSubmit}
+              disabled={isLoading}
+              className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-750 text-white shadow-lg shadow-indigo-500/25 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {isLoading ? (
+                <>
+                  <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Running Review...
+                </>
+              ) : (
+                "Run AI Review"
+              )}
+            </button>
           </div>
         </div>
       </div>
