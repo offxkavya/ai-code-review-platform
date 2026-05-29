@@ -51,13 +51,13 @@ export default function Home() {
     }
     setError(null);
     setIsLoading(true);
+    setResults(null);
     
     try {
       const data = await sendCodeForReview(code, language);
       setResults(data.comments);
     } catch (err: any) {
       console.warn("Backend unavailable, falling back to local analysis mode:", err);
-      // Fallback local mock reviews
       const mockComments = getLocalMockComments(code);
       setResults(mockComments);
     } finally {
@@ -65,24 +65,33 @@ export default function Home() {
     }
   };
 
+  const getSeverityColor = (severity: string) => {
+    switch(severity) {
+      case "critical": return "border-rose-500/50 bg-rose-500/10 text-rose-400";
+      case "warning": return "border-amber-500/50 bg-amber-500/10 text-amber-400";
+      case "info": return "border-blue-500/50 bg-blue-500/10 text-blue-400";
+      default: return "border-zinc-500/50 bg-zinc-500/10 text-zinc-400";
+    }
+  };
+
   return (
     <div className="flex-1 bg-[#09090b] flex flex-col items-center justify-center p-6 sm:p-12 relative overflow-hidden">
-      {/* Background gradients */}
       <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] rounded-full bg-indigo-500/10 blur-[100px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-[300px] h-[300px] rounded-full bg-violet-500/10 blur-[100px] pointer-events-none" />
       
-      <div className="w-full max-w-4xl z-10 space-y-8">
-        <div className="text-center space-y-3">
-          <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl bg-gradient-to-r from-zinc-100 via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
-            Automate Your Code Reviews
-          </h1>
-          <p className="text-zinc-400 max-w-xl mx-auto text-base sm:text-lg">
-            Paste your source code or a unified git diff below, and our AI reviewer will scan it for bugs, issues, and style violations.
-          </p>
-        </div>
+      <div className="w-full max-w-5xl z-10 space-y-8">
+        {!results && !isLoading && (
+          <div className="text-center space-y-3">
+            <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl bg-gradient-to-r from-zinc-100 via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
+              Automate Your Code Reviews
+            </h1>
+            <p className="text-zinc-400 max-w-xl mx-auto text-base sm:text-lg">
+              Paste your source code or a unified git diff below, and our AI reviewer will scan it for bugs, issues, and style violations.
+            </p>
+          </div>
+        )}
 
         {isLoading ? (
-          /* Premium Loading Screen */
           <div className="bg-[#18181b]/50 border border-[#27272a] rounded-2xl p-12 backdrop-blur-xl shadow-2xl flex flex-col items-center justify-center min-h-[450px] space-y-8 animate-fade-in relative overflow-hidden">
             <div className="relative flex items-center justify-center h-32 w-32">
               <div className="absolute inset-0 rounded-full border-2 border-indigo-500/10 animate-ping" />
@@ -91,59 +100,67 @@ export default function Home() {
                 <span className="h-6 w-6 border-3 border-white/20 border-t-white rounded-full animate-spin" />
               </div>
             </div>
-
             <div className="text-center space-y-3 max-w-md">
               <h3 className="text-xl font-bold text-zinc-100">Analyzing Codebase</h3>
               <p className="text-sm text-zinc-400 animate-pulse min-h-[20px] transition-all duration-300">
                 {LOADING_STEPS[loadingStep]}
               </p>
             </div>
-
             <div className="w-full max-w-xs bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-zinc-800">
-              <div 
-                className="h-full bg-gradient-to-r from-indigo-500 to-violet-600 transition-all duration-500 ease-out" 
-                style={{ width: `${((loadingStep + 1) / LOADING_STEPS.length) * 100}%` }}
-              />
+              <div className="h-full bg-gradient-to-r from-indigo-500 to-violet-600 transition-all duration-500 ease-out" style={{ width: \`\${((loadingStep + 1) / LOADING_STEPS.length) * 100}%\` }} />
+            </div>
+          </div>
+        ) : results ? (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-zinc-100">Analysis Results</h2>
+              <button onClick={() => setResults(null)} className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-sm font-medium transition">
+                Review Another File
+              </button>
+            </div>
+            <div className="grid grid-cols-1 gap-4">
+              {results.map((comment, idx) => (
+                <div key={idx} className={\`p-4 rounded-xl border backdrop-blur-md \${getSeverityColor(comment.severity)}\`}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-black/20">
+                          Line {comment.line_number}
+                        </span>
+                        <span className="text-xs font-bold uppercase tracking-wider">{comment.severity}</span>
+                      </div>
+                      <p className="font-medium text-sm sm:text-base opacity-90">{comment.message}</p>
+                      {comment.suggestion && (
+                        <div className="mt-3 p-3 bg-black/30 rounded-lg border border-white/10 font-mono text-sm text-white/80">
+                          {comment.suggestion}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         ) : (
-          /* Input Panel with Glassmorphism */
-          <div className="bg-[#18181b]/50 border border-[#27272a] rounded-2xl p-6 backdrop-blur-xl shadow-2xl space-y-6 glow-card">
+          <div className="bg-[#18181b]/50 border border-[#27272a] rounded-2xl p-6 backdrop-blur-xl shadow-2xl space-y-6 glow-card animate-fade-in">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h2 className="text-lg font-semibold text-zinc-200">Submit Code</h2>
                 <p className="text-xs text-zinc-500">Select language or load a test template</p>
               </div>
-              
               <div className="flex items-center gap-2">
-                <select
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
-                  className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-zinc-300 text-sm focus:outline-none focus:border-indigo-500"
-                >
+                <select value={language} onChange={(e) => setLanguage(e.target.value)} className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-zinc-300 text-sm focus:outline-none focus:border-indigo-500">
                   <option value="python">Python</option>
                   <option value="javascript">JavaScript</option>
                   <option value="diff">Unified Diff</option>
                   <option value="other">Other</option>
                 </select>
-                
                 <div className="flex gap-1 bg-zinc-950/60 p-1 border border-zinc-800 rounded-lg">
-                  <button
-                    onClick={() => loadTemplate("python")}
-                    className="px-2.5 py-1 rounded text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition"
-                  >
-                    Py Template
-                  </button>
-                  <button
-                    onClick={() => loadTemplate("diff")}
-                    className="px-2.5 py-1 rounded text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition"
-                  >
-                    Diff Template
-                  </button>
+                  <button onClick={() => loadTemplate("python")} className="px-2.5 py-1 rounded text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition">Py Template</button>
+                  <button onClick={() => loadTemplate("diff")} className="px-2.5 py-1 rounded text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition">Diff Template</button>
                 </div>
               </div>
             </div>
-            
             <div className="relative rounded-xl border border-zinc-800 bg-zinc-950/60 shadow-inner overflow-hidden font-mono text-sm">
               <div className="flex items-center justify-between px-4 py-2 bg-zinc-950/90 border-b border-zinc-850">
                 <div className="flex items-center gap-1.5">
@@ -151,28 +168,13 @@ export default function Home() {
                   <span className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
                   <span className="w-3 h-3 rounded-full bg-[#27c93f]" />
                 </div>
-                <span className="text-[11px] text-zinc-500 font-medium">
-                  {language === "diff" ? "commit.patch" : `code.${language === "python" ? "py" : language === "javascript" ? "js" : "txt"}`}
-                </span>
+                <span className="text-[11px] text-zinc-500 font-medium">{language === "diff" ? "commit.patch" : \`code.\${language === "python" ? "py" : language === "javascript" ? "js" : "txt"}\`}</span>
               </div>
-              
-              <textarea
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="Paste your source code or diff here..."
-                className="w-full h-80 bg-transparent text-zinc-200 px-4 py-3 focus:outline-none resize-none font-mono leading-relaxed"
-              />
+              <textarea value={code} onChange={(e) => setCode(e.target.value)} placeholder="Paste your source code or diff here..." className="w-full h-80 bg-transparent text-zinc-200 px-4 py-3 focus:outline-none resize-none font-mono leading-relaxed" />
             </div>
-
-            {error && (
-              <p className="text-sm text-rose-400 font-medium">{error}</p>
-            )}
-
+            {error && <p className="text-sm text-rose-400 font-medium">{error}</p>}
             <div className="flex justify-end">
-              <button
-                onClick={handleReviewSubmit}
-                className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-750 text-white shadow-lg shadow-indigo-500/25 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
-              >
+              <button onClick={handleReviewSubmit} className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-750 text-white shadow-lg shadow-indigo-500/25 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer">
                 Run AI Review
               </button>
             </div>
