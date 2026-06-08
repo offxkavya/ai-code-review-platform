@@ -74,6 +74,18 @@ export default function Home() {
     }
   };
 
+  const handleExport = () => {
+    if (!results) return;
+    const content = results.map(r => \`Line \${r.line_number} [\${r.severity.toUpperCase()}]: \${r.message}\nSuggestion: \${r.suggestion || 'None'}\n\`).join('\n');
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'review-report.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="flex-1 bg-black flex flex-col items-center justify-center p-6 sm:p-12 relative overflow-hidden">
       <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] rounded-full bg-blue-900 blur-[100px] pointer-events-none" />
@@ -113,15 +125,20 @@ export default function Home() {
           <div className="space-y-6 animate-fade-in">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">Analysis Results</h2>
-              <button onClick={() => setResults(null)} className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-sm font-medium transition">
-                Review Another File
-              </button>
+              <div className="flex gap-3">
+                <button onClick={handleExport} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition">
+                  Export Report
+                </button>
+                <button onClick={() => setResults(null)} className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-sm font-medium transition">
+                  Review Another File
+                </button>
+              </div>
             </div>
             <div className="grid grid-cols-1 gap-4">
               {results.map((comment, idx) => (
                 <div key={idx} className={\`p-4 rounded-xl border \${getSeverityColor(comment.severity)}\`}>
                   <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-2">
+                    <div className="space-y-2 w-full">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-black/20 text-white">
                           Line {comment.line_number}
@@ -130,8 +147,16 @@ export default function Home() {
                       </div>
                       <p className="font-medium text-sm sm:text-base text-white">{comment.message}</p>
                       {comment.suggestion && (
-                        <div className="mt-3 p-3 bg-black/30 rounded-lg border border-black/10 font-mono text-sm text-white">
-                          {comment.suggestion}
+                        <div className="mt-3 relative group">
+                          <div className="p-3 bg-black/30 rounded-lg border border-black/10 font-mono text-sm text-white pr-12">
+                            {comment.suggestion}
+                          </div>
+                          <button 
+                            onClick={() => navigator.clipboard.writeText(comment.suggestion || '')}
+                            className="absolute top-2 right-2 p-1.5 bg-black/40 hover:bg-black/60 rounded text-xs text-white opacity-0 group-hover:opacity-100 transition"
+                          >
+                            Copy
+                          </button>
                         </div>
                       )}
                     </div>
