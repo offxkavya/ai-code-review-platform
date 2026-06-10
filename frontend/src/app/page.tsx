@@ -185,16 +185,23 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            <div className="relative rounded-xl border border-zinc-700 bg-black shadow-inner overflow-hidden font-mono text-sm">
+            <div className="relative rounded-xl border border-zinc-700 bg-black shadow-inner overflow-hidden font-mono text-sm flex flex-col">
               <div className="flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-800">
                 <div className="flex items-center gap-1.5">
                   <span className="w-3 h-3 rounded-full bg-red-500" />
                   <span className="w-3 h-3 rounded-full bg-yellow-500" />
                   <span className="w-3 h-3 rounded-full bg-green-500" />
                 </div>
-                <span className="text-[11px] text-zinc-500 font-medium">{language === "diff" ? "commit.patch" : \`code.\${language === "python" ? "py" : language === "javascript" ? "js" : "txt"}\`}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-[11px] text-zinc-500 font-medium">{language === "diff" ? "commit.patch" : \`code.\${language === "python" ? "py" : language === "javascript" ? "js" : "txt"}\`}</span>
+                  <button onClick={() => setCode("")} className="text-[11px] text-zinc-400 hover:text-white transition">Clear</button>
+                </div>
               </div>
               <textarea value={code} onChange={(e) => setCode(e.target.value)} placeholder="Paste your source code or diff here..." className="w-full h-80 bg-transparent text-white px-4 py-3 focus:outline-none resize-none font-mono leading-relaxed" />
+              <div className="px-4 py-1.5 bg-zinc-900 border-t border-zinc-800 text-[10px] text-zinc-500 flex justify-between uppercase tracking-wider font-semibold">
+                <span>{code.split('\\n').length} Lines</span>
+                <span>{code.length} Chars</span>
+              </div>
             </div>
             {error && <p className="text-sm text-red-500 font-medium">{error}</p>}
             <div className="flex justify-end">
